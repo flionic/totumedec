@@ -15,13 +15,14 @@ from telegram import ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMa
 from telegram.ext import Updater, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
-print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
+contacts = f"_тел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
+
 ctrl_keys = [InlineKeyboardButton(" - ГОЛОВНА - ", callback_data='M0'),
              InlineKeyboardButton(" - ЗВОРОТНІЙ ЗВ’ЯЗОК - ", callback_data='CB')]
-
 main_menu = InlineKeyboardMarkup([
     [InlineKeyboardButton("Загальна інформація", callback_data='M1')],
     [InlineKeyboardButton("Об’єкти декларування", callback_data='M2')],
@@ -61,27 +62,23 @@ def cmd_start(bot, update):
     user = update.message.from_user
     logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command "
                  f"from chat {update.message.chat_id}")
-    bot.send_message(chat_id=update.message.chat_id,
-                     text="Вітаю! Я – бот-помічник з питань електронного декларування для публічних осіб.",
-                     parse_mode="Markdown")
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown",
+                     text="Вітаю! Я – бот-помічник з питань електронного декларування для публічних осіб.")
     cmd_menu(bot, update)
 
 
 def cmd_menu(bot, update):
-    # Inline MainMenu
-    update.message.reply_text("*Оберіть необхідний розділ:*", reply_markup=main_menu, parse_mode="Markdown")
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown",
-                     text=f"_тел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/")
+    update.message.reply_text(f"{contacts}*Оберіть необхідний розділ:*", reply_markup=main_menu, parse_mode="Markdown")
 
 
-def button(bot, update):
+def buttons(bot, update):
     query = update.callback_query
     section = {'M0': ['Головна', main_menu],
                'M1': ['Загальна інформація', menu_1],
                'M2': ['Об’єкти декларування', menu_2]}
     if query.data in section:
         bot.edit_message_text(
-            text="Розділ: %s" % section[query.data][0], reply_markup=section[query.data][1],
+            text=f"{contacts}Розділ: {section[query.data][0]}", reply_markup=section[query.data][1],
             chat_id=query.message.chat_id, message_id=query.message.message_id, parse_mode="Markdown")
     elif query.data == 'CB':
         req_cont = telegram.ReplyKeyboardMarkup(
@@ -94,10 +91,9 @@ def cmd_callback(bot, update):
     user = update.message.contact
     logging.info(f'Callback request from @{update.message.from_user.username}, '
                  f'{user.first_name} {user.last_name}, {user.phone_number}')
-    update.message.reply_text("*Усі розділи:*", reply_markup=main_menu, parse_mode="Markdown")
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown",
-                     text="Дякуємо за звернення, *%s*, ми зв'яжемося з Вами найближчим часом." % user.first_name,
-                     reply_markup=ReplyKeyboardRemove())
+    cmd_menu(bot, update)
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove(),
+                     text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
 
 
 def error(bot, update, error):
@@ -118,7 +114,7 @@ def main():
         dp.add_handler(CommandHandler('start', cmd_start))
         dp.add_handler(MessageHandler(Filters.text, cmd_menu))
         dp.add_handler(MessageHandler(Filters.contact, cmd_callback))
-        dp.add_handler(CallbackQueryHandler(button))
+        dp.add_handler(CallbackQueryHandler(buttons))
 
         # log all errors
         dp.add_error_handler(error)
@@ -126,11 +122,6 @@ def main():
         # Start Bot
         logger.info("Start bot")
         updater.start_polling()
-
-        # Run the bot until you press Ctrl-C or the process receives SIGINT,
-        # SIGTERM or SIGABRT. This should be used most of the time, since
-        # start_polling() is non-blocking and will stop the bot gracefully.
-        # ! updater.idle()
 
 
 if __name__ == '__main__':
