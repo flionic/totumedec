@@ -11,7 +11,8 @@ Official site: https://lisha.pro
 import os
 import logging
 import telegram
-from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InputContactMessageContent
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from  telegram import InputContactMessageContent
 from telegram.ext import Updater, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
@@ -20,57 +21,24 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Main messages
-menu_sections = ["Загальна інформація", "Об’єкти декларування", "Суттєві зміни у майновому стані", "Відповідальність"]
 msg_start = "Вітаю! Я – бот-помічник з питань електронного декларування для публічних осіб."
 msg_getSection = "*Оберіть необхідний розділ:*"
 msg_contacts = """
-*Зворотній зв’язок*
 _тел. для довідок:_ [+380685578758](call://+380685578758)
 http://totum.com.ua/
 """
-msg_callback = f"Дякуємо за звернення, *%s*, ми зв'яжемося з Вами найближчим часом.\n{msg_contacts}"
+msg_callback = f"Дякуємо за звернення, *%s*, ми зв'яжемося з Вами найближчим часом."
 
-main_menu = InlineKeyboardMarkup([
-    [InlineKeyboardButton(menu_sections[1], callback_data='menu_1')],
-    [InlineKeyboardButton(menu_sections[2], callback_data='menu_2')],
-    [InlineKeyboardButton(menu_sections[3], callback_data='t3')],
-    [InlineKeyboardButton(menu_sections[4], callback_data='t4')]
-])
-
-
-def cmd_start(bot, update):
-    user = update.message.from_user
-    logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command")
-    bot.send_message(chat_id=update.message.chat_id, text=msg_start, parse_mode="Markdown")
-    cmd_menu(bot, update)
-
-
-def cmd_menu(bot, update):
-    # Inline MainMenu
-    update.message.reply_text(msg_getSection, reply_markup=main_menu, parse_mode="Markdown")
-    bot.send_message(chat_id=update.message.chat_id, text=msg_contacts, parse_mode="Markdown")
-
-
-def cmd_menu_t(bot, update):  # 2 variant
-    # KeyboardMarkup MainMenu
-    reply_keyboard = [[menu_sections[1]], [menu_sections[2]], [menu_sections[3]], [menu_sections[4]]]
-    bot.send_message(chat_id=update.message.chat_id, text=f'{msg_contacts}\n\n{msg_getSection}', parse_mode="Markdown",
-                     reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-
-
-def button(bot, update):
-    query = update.callback_query
-    menu_1 = InlineKeyboardMarkup([
+menu = {
+    'M1': {'name': 'Загальна інформація', 'keys': InlineKeyboardMarkup([
         [InlineKeyboardButton("Подання декларації", callback_data='t1_1')],
         [InlineKeyboardButton("Суб’єкти декларування", callback_data='t1_2')],
         [InlineKeyboardButton("Відповідальне становище", callback_data='t1_3')],
         [InlineKeyboardButton("Високий рівень корупційних ризиків", callback_data='t1_4')],
         [InlineKeyboardButton("Строк декларування", callback_data='t1_5')],
         [InlineKeyboardButton("Члени сім’ї", callback_data='t1_6')],
-        [InlineKeyboardButton("Членство в організаціях", callback_data='t1_7')],
-        [InlineKeyboardButton(" - НА ГОЛОВНУ - ", callback_data='main_menu')]
-    ])
-    menu_2 = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Членство в організаціях", callback_data='t1_7')]])},
+    'M2': {'name': 'Об’єкти декларування', 'keys': InlineKeyboardMarkup([
         [InlineKeyboardButton("Нерухоме майно", callback_data='t2_1')],
         [InlineKeyboardButton("Об’єкти незавершеного будівництва", callback_data='t2_2')],
         [InlineKeyboardButton("Цінне рухоме майно", callback_data='t2_3'),
@@ -83,18 +51,51 @@ def button(bot, update):
          InlineKeyboardButton("Грошові активи", callback_data='t2_10')],
         [InlineKeyboardButton("Фінансові зобов’язання", callback_data='t2_11'),
          InlineKeyboardButton("Видатки та правочини", callback_data='t2_12')],
-        [InlineKeyboardButton("Робота за сумісництвом", callback_data='t2_13')],
-        [InlineKeyboardButton(" - НА ГОЛОВНУ - ", callback_data='main_menu')]
-    ])
-    section = {'menu_1': [menu_sections[1], menu_1],
-               'menu_2': [menu_sections[2], menu_2],
-               'main_menu': [f'{menu_sections[0]}. {msg_getSection}', main_menu]}
-    try:
-        bot.edit_message_text(text="Розділ: %s" % section[query.data][0], reply_markup=section[query.data][1],
-                              chat_id=query.message.chat_id, message_id=query.message.message_id)
-    except KeyError:
-        bot.edit_message_text(text=msg_getSection, reply_markup=main_menu,
-                              chat_id=query.message.chat_id, message_id=query.message.message_id)
+        [InlineKeyboardButton("Робота за сумісництвом", callback_data='t2_13')]])},
+    'M3': {'name': 'Суттєві зміни у майновому стані'},
+    'M4': {'name': 'Відповідальність'}
+}
+
+main_menu = InlineKeyboardMarkup([
+    [InlineKeyboardButton(menu['M1']['name'], callback_data='M1')],
+    [InlineKeyboardButton(menu['M2']['name'], callback_data='M2')],
+    [InlineKeyboardButton(menu['M3']['name'], callback_data='M3')],
+    [InlineKeyboardButton(menu['M4']['name'], callback_data='M4')]
+])
+
+
+def cmd_start(bot, update):
+    user = update.message.from_user
+    logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command "
+                 f"from chat {update.message.chat_id}")
+    bot.send_message(chat_id=update.message.chat_id, text=msg_start, parse_mode="Markdown")
+    cmd_menu(bot, update)
+
+
+def cmd_menu(bot, update):
+    # Inline MainMenu
+    update.message.reply_text(msg_getSection, reply_markup=main_menu, parse_mode="Markdown")
+    contact_kb = telegram.ReplyKeyboardMarkup(
+        [[telegram.KeyboardButton(text="Головна")], [telegram.KeyboardButton(text="Зворотній зв'язок", request_contact=True)]])
+    bot.send_message(chat_id=update.message.chat_id, text=msg_contacts, parse_mode="Markdown",
+                     reply_markup=contact_kb)
+
+
+def cmd_menu_t(bot, update):  # 2 variant
+    # KeyboardMarkup MainMenu
+    reply_keyboard = [[menu['M1']['name']], [menu['M2']['name']], [menu['M3']['name']], [menu['M4']['name']]]
+    bot.send_message(chat_id=update.message.chat_id, text=f'{msg_contacts}\n\n{msg_getSection}', parse_mode="Markdown",
+                     reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+
+def button(bot, update):
+    query = update.callback_query
+    if query.data in menu and 'keys' in menu[query.data]:
+        bot.edit_message_text(text="Розділ: %s" % menu[query.data]['name'], reply_markup=menu[query.data]['keys'],
+                              chat_id=query.message.chat_id, message_id=query.message.message_id, parse_mode="Markdown")
+    else:
+        bot.edit_message_text(text="Розділ: %s" % msg_getSection, reply_markup=main_menu,
+                              chat_id=query.message.chat_id, message_id=query.message.message_id, parse_mode="Markdown")
 
 
 def cmd_callback(bot, update):
