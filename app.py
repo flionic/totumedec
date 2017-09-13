@@ -19,16 +19,20 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
+callback_chat = '-213673334'
 contacts = f"_тел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
-
-ctrl_keys = [InlineKeyboardButton(" - ГОЛОВНА - ", callback_data='M0'),
-             InlineKeyboardButton(" - ЗВОРОТНІЙ ЗВ’ЯЗОК - ", callback_data='CB')]
+hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
+ctrl_keys = [
+    InlineKeyboardButton("Зворотній зв’язок", callback_data='CB'),
+    InlineKeyboardButton("Поділитися з друзями", switch_inline_query=hello)
+]
+menu_key = [InlineKeyboardButton(" - ГОЛОВНА - ", callback_data='M0')]
 main_menu = InlineKeyboardMarkup([
     [InlineKeyboardButton("Загальна інформація", callback_data='M1')],
     [InlineKeyboardButton("Об’єкти декларування", callback_data='M2')],
     [InlineKeyboardButton("Суттєві зміни у майновому стані", callback_data='t3')],
     [InlineKeyboardButton("Відповідальність", callback_data='t4')],
-    [ctrl_keys[1]]
+    ctrl_keys
 ])
 menu_1 = InlineKeyboardMarkup([
     [InlineKeyboardButton("Подання декларації", callback_data='t1_1')],
@@ -38,7 +42,7 @@ menu_1 = InlineKeyboardMarkup([
     [InlineKeyboardButton("Строк декларування", callback_data='t1_5')],
     [InlineKeyboardButton("Члени сім’ї", callback_data='t1_6')],
     [InlineKeyboardButton("Членство в організаціях", callback_data='t1_7')],
-    ctrl_keys
+    ctrl_keys, menu_key
 ])
 menu_2 = InlineKeyboardMarkup([
     [InlineKeyboardButton("Нерухоме майно", callback_data='t2_1')],
@@ -54,7 +58,7 @@ menu_2 = InlineKeyboardMarkup([
     [InlineKeyboardButton("Фінансові зобов’язання", callback_data='t2_11'),
      InlineKeyboardButton("Видатки та правочини", callback_data='t2_12')],
     [InlineKeyboardButton("Робота за сумісництвом", callback_data='t2_13')],
-    ctrl_keys
+    ctrl_keys, menu_key
 ])
 
 
@@ -62,8 +66,10 @@ def cmd_start(bot, update):
     user = update.message.from_user
     logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command "
                  f"from chat {update.message.chat_id}")
+    bot.send_message(chat_id=callback_chat,
+                     text=f"@{user.username} ({user.first_name} {user.last_name}) натиснув /start")
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown",
-                     text="Вітаю! Я – бот-помічник з питань електронного декларування для публічних осіб.")
+                     text=f"Вітаю! {hello}")
     cmd_menu(bot, update)
 
 
@@ -76,6 +82,7 @@ def buttons(bot, update):
     section = {'M0': ['Головна', main_menu],
                'M1': ['Загальна інформація', menu_1],
                'M2': ['Об’єкти декларування', menu_2]}
+    print(query)
     if query.data in section:
         bot.edit_message_text(
             text=f"{contacts}Розділ: {section[query.data][0]}", reply_markup=section[query.data][1],
@@ -91,6 +98,10 @@ def cmd_callback(bot, update):
     user = update.message.contact
     logging.info(f'Callback request from @{update.message.from_user.username}, '
                  f'{user.first_name} {user.last_name}, {user.phone_number}')
+    bot.send_message(chat_id=callback_chat,
+                     text=f'Отримано контактні дані:\n'
+                          f'{user.first_name} {user.last_name} – @{update.message.from_user.username}\n'
+                          f'{user.phone_number}')
     cmd_menu(bot, update)
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove(),
                      text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
