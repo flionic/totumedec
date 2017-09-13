@@ -20,6 +20,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Main messages
+menu_sections = ["Загальна інформація", "Об’єкти декларування", "Суттєві зміни у майновому стані", "Відповідальність"]
 msg_start = "Вітаю! Я – бот-помічник з питань електронного декларування для публічних осіб."
 msg_getSection = "*Оберіть необхідний розділ:*"
 msg_contacts = """
@@ -30,10 +31,10 @@ http://totum.com.ua/
 msg_callback = f"Дякуємо за звернення, *%s*, ми зв'яжемося з Вами найближчим часом.\n{msg_contacts}"
 
 main_menu = InlineKeyboardMarkup([
-    [InlineKeyboardButton("Загальна інформація", callback_data='menu_1')],
-    [InlineKeyboardButton("Об’єкти декларування", callback_data='menu_2')],
-    [InlineKeyboardButton("Суттєві зміни у майновому стані", callback_data='t3')],
-    [InlineKeyboardButton("Відповідальність", callback_data='t4')]
+    [InlineKeyboardButton(menu_sections[1], callback_data='menu_1')],
+    [InlineKeyboardButton(menu_sections[2], callback_data='menu_2')],
+    [InlineKeyboardButton(menu_sections[3], callback_data='t3')],
+    [InlineKeyboardButton(menu_sections[4], callback_data='t4')]
 ])
 
 
@@ -52,12 +53,7 @@ def cmd_menu(bot, update):
 
 def cmd_menu_t(bot, update):  # 2 variant
     # KeyboardMarkup MainMenu
-    reply_keyboard = [
-        ['Загальна інформація'],
-        ['Об’єкти декларування'],
-        ['Суттєві зміни у майновому стані'],
-        ['Відповідальність']
-    ]
+    reply_keyboard = [[menu_sections[1]], [menu_sections[2]], [menu_sections[3]], [menu_sections[4]]]
     bot.send_message(chat_id=update.message.chat_id, text=f'{msg_contacts}\n\n{msg_getSection}', parse_mode="Markdown",
                      reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
@@ -77,17 +73,22 @@ def button(bot, update):
     menu_2 = InlineKeyboardMarkup([
         [InlineKeyboardButton("Нерухоме майно", callback_data='t2_1')],
         [InlineKeyboardButton("Об’єкти незавершеного будівництва", callback_data='t2_2')],
-        [InlineKeyboardButton("Цінне рухоме майно", callback_data='t2_3'), InlineKeyboardButton("Транспортні засоби", callback_data='t2_4')],
-        [InlineKeyboardButton("Цінні папери ", callback_data='t2_5'), InlineKeyboardButton("Нематеріальні активи", callback_data='t2_6')],
-        [InlineKeyboardButton("Корпоративні права", callback_data='t2_7'), InlineKeyboardButton("Доходи", callback_data='t2_8')],
-        [InlineKeyboardButton("Подарунки", callback_data='t2_9'), InlineKeyboardButton("Грошові активи", callback_data='t2_10')],
-        [InlineKeyboardButton("Фінансові зобов’язання", callback_data='t2_11'), InlineKeyboardButton("Видатки та правочини", callback_data='t2_12')],
+        [InlineKeyboardButton("Цінне рухоме майно", callback_data='t2_3'),
+         InlineKeyboardButton("Транспортні засоби", callback_data='t2_4')],
+        [InlineKeyboardButton("Цінні папери ", callback_data='t2_5'),
+         InlineKeyboardButton("Нематеріальні активи", callback_data='t2_6')],
+        [InlineKeyboardButton("Корпоративні права", callback_data='t2_7'),
+         InlineKeyboardButton("Доходи", callback_data='t2_8')],
+        [InlineKeyboardButton("Подарунки", callback_data='t2_9'),
+         InlineKeyboardButton("Грошові активи", callback_data='t2_10')],
+        [InlineKeyboardButton("Фінансові зобов’язання", callback_data='t2_11'),
+         InlineKeyboardButton("Видатки та правочини", callback_data='t2_12')],
         [InlineKeyboardButton("Робота за сумісництвом", callback_data='t2_13')],
         [InlineKeyboardButton(" - НА ГОЛОВНУ - ", callback_data='main_menu')]
     ])
-    section = {'menu_1': ['Загальна інформація', menu_1],
-               'menu_2': ['Об’єкти декларування', menu_2],
-               'main_menu': [f'Головна. {msg_getSection}', main_menu]}
+    section = {'menu_1': [menu_sections[1], menu_1],
+               'menu_2': [menu_sections[2], menu_2],
+               'main_menu': [f'{menu_sections[0]}. {msg_getSection}', main_menu]}
     try:
         bot.edit_message_text(text="Розділ: %s" % section[query.data][0], reply_markup=section[query.data][1],
                               chat_id=query.message.chat_id, message_id=query.message.message_id)
