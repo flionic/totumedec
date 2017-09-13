@@ -10,6 +10,7 @@ Official site: https://lisha.pro
 # -*- coding: utf-8 -*-
 import os
 import logging
+import sqlite3
 import telegram
 from telegram import ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CallbackQueryHandler
@@ -20,13 +21,14 @@ logger = logging.getLogger(__name__)
 
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 callback_chat = '-213673334'
-contacts = f"_тел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
 hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
+contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
+
 ctrl_keys = [
     InlineKeyboardButton("Зворотній зв’язок", callback_data='CB'),
     InlineKeyboardButton("Поділитися з друзями", switch_inline_query=hello)
 ]
-menu_key = [InlineKeyboardButton(" - ГОЛОВНА - ", callback_data='M0')]
+menu_key = [InlineKeyboardButton(" - НА ГОЛОВНУ - ", callback_data='M0')]
 main_menu = InlineKeyboardMarkup([
     [InlineKeyboardButton("Загальна інформація", callback_data='M1')],
     [InlineKeyboardButton("Об’єкти декларування", callback_data='M2')],
@@ -82,16 +84,25 @@ def buttons(bot, update):
     section = {'M0': ['Головна', main_menu],
                'M1': ['Загальна інформація', menu_1],
                'M2': ['Об’єкти декларування', menu_2]}
-    print(query)
     if query.data in section:
         bot.edit_message_text(
-            text=f"{contacts}Розділ: {section[query.data][0]}", reply_markup=section[query.data][1],
+            text=f"{contacts}Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
             chat_id=query.message.chat_id, message_id=query.message.message_id, parse_mode="Markdown")
     elif query.data == 'CB':
         req_cont = telegram.ReplyKeyboardMarkup(
             [[telegram.KeyboardButton(text="Залишити контакт", request_contact=True)]])
         bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", reply_markup=req_cont,
                          text="Натисніть на кнопку і підтвердіть відправку, щоб ми передзвонили Вам")
+    else:
+        data = sqlite3.connect('data.sql')
+        c = data.cursor()
+        t = (query.data,)
+        for row in c.execute("SELECT title, text FROM menu_texts WHERE name=?", t):
+            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", text=f"*{row[0]}*\n\n{row[1]}")
+            bot.send_message(text=contacts, reply_markup=InlineKeyboardMarkup([ctrl_keys, menu_key]),
+                             chat_id=query.message.chat_id, parse_mode="Markdown")
+        data.commit()
+        data.close()
 
 
 def cmd_callback(bot, update):
