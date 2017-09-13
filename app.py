@@ -27,12 +27,6 @@ http://totum.com.ua/
 '''
 
 
-def set_cmd():
-    dp.add_handler(CommandHandler('start', cmd_start))
-    dp.add_handler(CommandHandler('start_test', cmd_start_t))
-    dp.add_handler(MessageHandler(Filters.text, cmd_start))
-
-
 def cmd_start(bot, update):
     main_menu = InlineKeyboardMarkup([
         [InlineKeyboardButton("Загальна інформація", callback_data='m1_1')],
@@ -55,14 +49,22 @@ def cmd_start_t(bot, update):
                      reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
 
-try:
-    updater = Updater(token=os.environ.get('token1'))
-    dp = updater.dispatcher
-except ValueError:
-    logger.error("Token was not found.")
-except telegram.error.InvalidToken:
-    logger.error("Updater: Invalid token", "test")
-else:
-    logger.info("Start polling")
-    set_cmd()
-    updater.start_polling()
+def main():
+    try:
+        updater = Updater(token=os.environ.get('token'))
+        dp = updater.dispatcher
+    except ValueError:
+        logger.error("Token was not found.")
+    except telegram.error.InvalidToken:
+        logger.exception("Updater: Invalid token")
+    else:
+        dp.add_handler(CommandHandler('start', cmd_start))
+        dp.add_handler(CommandHandler('start_test', cmd_start_t))
+        dp.add_handler(MessageHandler(Filters.text, cmd_start))
+
+        logger.info("Start polling")
+        updater.start_polling()
+
+
+if __name__ == '__main__':
+    main()
