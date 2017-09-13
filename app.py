@@ -1,3 +1,13 @@
+"""
+Copyrights ©
+Licensed by GNU GPL v3.0
+Created date: 13 September 2017, 00:37
+Project: E-declaration Bot
+Created for: Totum
+Created by: Bionic Inc
+Official site: https://lisha.pro
+"""
+# -*- coding: utf-8 -*-
 import os
 import logging
 import telegram
@@ -5,8 +15,9 @@ from telegram.ext import Updater, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler, Filters
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 
-print('TOTUM E-declaration Bot — © Bionic Inc 2017')
+print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 msg_start = '*Оберіть необхідний розділ:*'
 msg_contacts = '''
@@ -17,9 +28,9 @@ http://totum.com.ua/
 
 
 def set_cmd():
-    dispatcher.add_handler(CommandHandler('start', cmd_start))
-    dispatcher.add_handler(CommandHandler('start_test', cmd_start_t))
-    dispatcher.add_handler(MessageHandler(Filters.text, cmd_start))
+    dp.add_handler(CommandHandler('start', cmd_start))
+    dp.add_handler(CommandHandler('start_test', cmd_start_t))
+    dp.add_handler(MessageHandler(Filters.text, cmd_start))
 
 
 def cmd_start(bot, update):
@@ -40,19 +51,18 @@ def cmd_start_t(bot, update):
         ['Суттєві зміни у майновому стані'],
         ['Відповідальність']
     ]
-    bot.send_message(chat_id=update.message.chat_id, text=msg_contacts, parse_mode="Markdown")
-    bot.send_message(chat_id=update.message.chat_id, text=msg_start, parse_mode="Markdown",
+    bot.send_message(chat_id=update.message.chat_id, text=msg_contacts + '\n\n' + msg_start, parse_mode="Markdown",
                      reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
 
 try:
-    updater = Updater(token=os.environ.get('token'))
-    dispatcher = updater.dispatcher
+    updater = Updater(token=os.environ.get('token1'))
+    dp = updater.dispatcher
 except ValueError:
-    print('Error, token was not found')
+    logger.error("Token was not found.")
 except telegram.error.InvalidToken:
-    print('Update error: Invalid token')
+    logger.error("Updater: Invalid token", "test")
 else:
-    print('Start polling')
+    logger.info("Start polling")
     set_cmd()
     updater.start_polling()
