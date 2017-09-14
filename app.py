@@ -77,10 +77,9 @@ def cmd_start(bot, update):
     user = update.message.from_user
     logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command "
                  f"from chat {update.message.chat_id}")
-    bot.send_message(chat_id=callback_chat,
-                     text=f"@{user.username} – {user.first_name} {user.last_name}\nнатиснув /start")
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown",
-                     text=f"Вітаю! {hello}")
+    bot.send_message(text=f"@{user.username} – {user.first_name} {user.last_name}\nнатиснув /start",
+                     chat_id=callback_chat)
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю! {hello}")
     cmd_menu(bot, update)
 
 
