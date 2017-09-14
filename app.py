@@ -1,11 +1,18 @@
 """
 Copyrights ©
 Licensed by GNU GPL v3.0
-Created date: 13 September 2017, 00:37
-Project: E-declaration Bot
-Created for: Totum
-Created by: Bionic Inc
-Official site: https://lisha.pro
+Created date:       13 September 2017, 00:37
+Project:            E-declaration Bot
+Created for:        Totum
+Created by:         Bionic Inc
+Official site:      https://lisha.pro
+
+Required Environment variables:
+    token               # Telegram Bot Api Token
+    admin_id            # For admin rules
+    callback_chat_id    # Telegram chat id for callback info
+Optional variables:
+    test_mode = 1       # enable test mode
 """
 # -*- coding: utf-8 -*-
 import os
@@ -16,11 +23,13 @@ from telegram import ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMa
 from telegram.ext import Updater, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler, Filters
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s' if os.environ.get('test_mode')
+    else None + '%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
-callback_chat = '-213673334'
+
+callback_chat = os.environ.get('callback_chat_id1')
 hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
 contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
 
@@ -118,6 +127,10 @@ def cmd_callback(bot, update):
                      text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
 
 
+def error(bot, update, error):
+    logger.warn('%s - "%s"' % (error, update))
+
+
 def main():
     # Create EventHandler and trying to pass it bot's token.
     try:
@@ -133,6 +146,9 @@ def main():
         dp.add_handler(MessageHandler(Filters.text, cmd_menu))
         dp.add_handler(MessageHandler(Filters.contact, cmd_callback))
         dp.add_handler(CallbackQueryHandler(buttons))
+
+        # log all errors
+        dp.add_error_handler(error)
 
         # Start Bot
         logger.info("Start bot")
