@@ -94,8 +94,8 @@ def buttons(bot, update):
     section = {'M0': ['Головна', main_menu],
                'M1': ['Загальна інформація', menu_1],
                'M2': ['Об’єкти декларування', menu_2]}
+    bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
     if query.data in section:
-        bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         bot.send_message(
             text=f"Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
             chat_id=query.message.chat_id, parse_mode="Markdown")
@@ -111,7 +111,6 @@ def buttons(bot, update):
         c = data.cursor()
         t = (query.data,)
         for row in c.execute("SELECT title, text FROM menu_texts WHERE name=?", t):
-            bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
             bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", text=f"*{row[0]}*\n\n{row[1]}")
             bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown",
                              reply_markup=InlineKeyboardMarkup([ctrl_keys, menu_key]), text=msg_getSection)
