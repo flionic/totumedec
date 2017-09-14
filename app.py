@@ -30,12 +30,13 @@ logger = logging.getLogger(__name__)
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 
 callback_chat = os.environ.get('callback_chat_id')
-hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
-contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
+msg_hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
+msg_contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
+msg_getSection = "*Оберіть необхідний розділ:*"
 
 ctrl_keys = [
     InlineKeyboardButton("Зворотній зв’язок", callback_data='CB'),
-    InlineKeyboardButton("Поділитися з друзями", switch_inline_query=hello)
+    InlineKeyboardButton("Поділитися з друзями", switch_inline_query=msg_hello)
 ]
 menu_key = [InlineKeyboardButton(" - НА ГОЛОВНУ - ", callback_data='M0')]
 main_menu = InlineKeyboardMarkup([
@@ -79,12 +80,13 @@ def cmd_start(bot, update):
                  f"from chat {update.message.chat_id}")
     bot.send_message(text=f"@{user.username} – {user.first_name} {user.last_name}\nнатиснув /start",
                      chat_id=callback_chat)
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю! {hello}")
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю! {msg_hello}")
     cmd_menu(bot, update)
 
 
 def cmd_menu(bot, update):
-    update.message.reply_text(f"{contacts}*Оберіть необхідний розділ:*", reply_markup=main_menu, parse_mode="Markdown")
+    update.message.reply_text(f"{msg_getSection}", reply_markup=main_menu, parse_mode="Markdown")
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"{msg_contacts}")
 
 
 def buttons(bot, update):
@@ -93,9 +95,9 @@ def buttons(bot, update):
                'M1': ['Загальна інформація', menu_1],
                'M2': ['Об’єкти декларування', menu_2]}
     if query.data in section:
-        bot.edit_message_text(
-            text=f"{contacts}Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
-            chat_id=query.message.chat_id, message_id=query.message.message_id, parse_mode="Markdown")
+        bot.send_message(
+            text=f"Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
+            chat_id=query.message.chat_id, parse_mode="Markdown")
     elif query.data == 'CB':
         req_cont = telegram.ReplyKeyboardMarkup(
             [[telegram.KeyboardButton(text="Залишити контакт", request_contact=True)]])
@@ -106,9 +108,9 @@ def buttons(bot, update):
         c = data.cursor()
         t = (query.data,)
         for row in c.execute("SELECT title, text FROM menu_texts WHERE name=?", t):
-            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", text=f"*{row[0]}*\n\n{row[1]}")
-            bot.send_message(text=contacts, reply_markup=InlineKeyboardMarkup([ctrl_keys, menu_key]),
-                             chat_id=query.message.chat_id, parse_mode="Markdown")
+            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown",
+                             reply_markup=InlineKeyboardMarkup([ctrl_keys, menu_key]), text=f"*{row[0]}*\n\n{row[1]}")
+            bot.send_message(text=msg_contacts, chat_id=query.message.chat_id, parse_mode="Markdown")
         data.commit()
         data.close()
 
@@ -127,7 +129,7 @@ def cmd_callback(bot, update):
 
 
 def error(bot, update, error):
-    logger.warn('%s - "%s"' % (error, update))
+    logger.warning('%s - "%s"' % (error, update))
 
 
 def main():
