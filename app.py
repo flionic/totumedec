@@ -31,8 +31,8 @@ print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 
 callback_chat = os.environ.get('callback_chat_id')
 msg_hello = 'бот-помічник з питань електронного декларування для публічних осіб.'
-msg_contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
-msg_getSection = "*Оберіть необхідний розділ:*"
+msg_contacts = f"📞 _Tел. для довідок:_ [+380685578758](call://+380685578758)\n💻 http://totum.com.ua/\n\n"
+msg_getSection = "🗃 *Оберіть необхідний розділ:*"
 
 keys_ctrl = [
     InlineKeyboardButton("️☎️ Зворотній зв’язок", callback_data='CB'),
@@ -47,36 +47,36 @@ menu_main = InlineKeyboardMarkup([
     keys_ctrl
 ])
 menu_1 = InlineKeyboardMarkup([
-    [InlineKeyboardButton("Подання декларації", callback_data='t1_1')],
-    [InlineKeyboardButton("Суб’єкти декларування", callback_data='t1_2')],
-    [InlineKeyboardButton("Відповідальне становище", callback_data='t1_3')],
-    [InlineKeyboardButton("Високий рівень корупційних ризиків", callback_data='t1_4')],
-    [InlineKeyboardButton("Строк декларування", callback_data='t1_5')],
-    [InlineKeyboardButton("Члени сім’ї", callback_data='t1_6')],
-    [InlineKeyboardButton("Членство в організаціях", callback_data='t1_7')],
+    [InlineKeyboardButton("📄 Подання декларації", callback_data='t1_1')],
+    [InlineKeyboardButton("📄 Суб’єкти декларування", callback_data='t1_2')],
+    [InlineKeyboardButton("📄 Відповідальне становище", callback_data='t1_3')],
+    [InlineKeyboardButton("📄 Високий рівень корупційних ризиків", callback_data='t1_4')],
+    [InlineKeyboardButton("📄 Строк декларування", callback_data='t1_5')],
+    [InlineKeyboardButton("📄 Члени сім’ї", callback_data='t1_6')],
+    [InlineKeyboardButton("📄 Членство в організаціях", callback_data='t1_7')],
     keys_ctrl, keys_main
 ])
 menu_2 = InlineKeyboardMarkup([
-    [InlineKeyboardButton("Нерухоме майно", callback_data='t2_1')],
-    [InlineKeyboardButton("Об’єкти незавершеного будівництва", callback_data='t2_2')],
-    [InlineKeyboardButton("Цінне рухоме майно", callback_data='t2_3'),
-     InlineKeyboardButton("Транспортні засоби", callback_data='t2_4')],
-    [InlineKeyboardButton("Цінні папери ", callback_data='t2_5'),
-     InlineKeyboardButton("Нематеріальні активи", callback_data='t2_6')],
-    [InlineKeyboardButton("Корпоративні права", callback_data='t2_7'),
-     InlineKeyboardButton("Доходи", callback_data='t2_8')],
-    [InlineKeyboardButton("Подарунки", callback_data='t2_9'),
-     InlineKeyboardButton("Грошові активи", callback_data='t2_10')],
-    [InlineKeyboardButton("Фінансові зобов’язання", callback_data='t2_11'),
-     InlineKeyboardButton("Видатки та правочини", callback_data='t2_12')],
-    [InlineKeyboardButton("Робота за сумісництвом", callback_data='t2_13')],
+    [InlineKeyboardButton("📄 Нерухоме майно", callback_data='t2_1')],
+    [InlineKeyboardButton("📄 Об’єкти незавершеного будівництва", callback_data='t2_2')],
+    [InlineKeyboardButton("📄 Цінне рухоме майно", callback_data='t2_3'),
+     InlineKeyboardButton("📄 Транспортні засоби", callback_data='t2_4')],
+    [InlineKeyboardButton("📄 Цінні папери ", callback_data='t2_5'),
+     InlineKeyboardButton("📄 Нематеріальні активи", callback_data='t2_6')],
+    [InlineKeyboardButton("📄 Корпоративні права", callback_data='t2_7'),
+     InlineKeyboardButton("📄 Доходи", callback_data='t2_8')],
+    [InlineKeyboardButton("📄 Подарунки", callback_data='t2_9'),
+     InlineKeyboardButton("📄 Грошові активи", callback_data='t2_10')],
+    [InlineKeyboardButton("📄 Фінансові зобов’язання", callback_data='t2_11'),
+     InlineKeyboardButton("📄 Видатки та правочини", callback_data='t2_12')],
+    [InlineKeyboardButton("📄 Робота за сумісництвом", callback_data='t2_13')],
     keys_ctrl, keys_main
 ])
 
 
 def cmd_start(bot, update):
     user = user_info(update)
-    logging.info(f"User{user[1]} used /start command from chat {update.message.chat_id}")
+    logging.info(f"User {user[1]} used /start command from chat {update.message.chat_id}")
     bot.send_message(text=f"{user[1]}\nнатиснув start", chat_id=callback_chat)  # Msg to callback chat
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю, {user[0]}! Я – {msg_hello}")
     cmd_menu(bot, update)
@@ -107,9 +107,8 @@ def buttons(bot, update):
                              text='1. Натисніть на велику кнопку знизу.\n'
                                   '2. Підтвердіть відправку кнопкою "OK".\n\nОчікую натискання ⤵️')  # Help message
         else:  # message for others
-            bot.send_message(chat_id=query.message.chat_id, reply_markup=menu_main,
-                             text=f'Для цієї дії, будь ласка, зверніться до мене в особисті повідомлення.\n'
-                                  f'https://t.me/{bot.username}')
+            bot.send_message(text=f'Для цієї дії, будь ласка, зверніться до мене в особисті повідомлення.\n'
+                                  f'https://t.me/{bot.username}', chat_id=query.message.chat_id, reply_markup=menu_main)
     else:  # picked text
         data = sqlite3.connect('data.sql')
         c = data.cursor()
