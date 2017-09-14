@@ -25,7 +25,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s' if os.environ.get('test_mode')
-    else None + '%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+    else '%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 
