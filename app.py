@@ -133,7 +133,8 @@ def cmd_callback(bot, update):
 
 
 def error(bot, update, error):
-    logger.warning('%s - "%s"' % (error, update))
+    if update:
+        logger.warning('%s - "%s"' % (error, update))
 
 
 def main():
