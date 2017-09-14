@@ -118,10 +118,6 @@ def cmd_callback(bot, update):
                      text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
 
 
-def error(bot, update, error):
-    logger.warn('Update "%s" caused error "%s"' % (update, error))
-
-
 def main():
     # Create EventHandler and trying to pass it bot's token.
     try:
@@ -137,9 +133,6 @@ def main():
         dp.add_handler(MessageHandler(Filters.text, cmd_menu))
         dp.add_handler(MessageHandler(Filters.contact, cmd_callback))
         dp.add_handler(CallbackQueryHandler(buttons))
-
-        # log all errors
-        dp.add_error_handler(error)
 
         # Start Bot
         logger.info("Start bot")
