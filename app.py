@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 
-callback_chat = os.environ.get('callback_chat_id1')
+callback_chat = os.environ.get('callback_chat_id')
 hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
 contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
 
