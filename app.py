@@ -22,7 +22,6 @@ import telegram
 from telegram import ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler, Filters
-from urllib.parse import quote
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s' if os.environ.get('test_mode')
@@ -31,20 +30,20 @@ logger = logging.getLogger(__name__)
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 
 callback_chat = os.environ.get('callback_chat_id')
-msg_hello = 'Я – бот-помічник з питань електронного декларування для публічних осіб.'
+msg_hello = 'бот-помічник з питань електронного декларування для публічних осіб.'
 msg_contacts = f"_Tел. для довідок:_ [+380685578758](call://+380685578758)\nhttp://totum.com.ua/\n\n"
 msg_getSection = "*Оберіть необхідний розділ:*"
 
 keys_ctrl = [
-    InlineKeyboardButton("Зворотній зв’язок", callback_data='CB'),
-    InlineKeyboardButton("Поділитися з друзями", switch_inline_query=msg_hello)
+    InlineKeyboardButton("️☎️ Зворотній зв’язок", callback_data='CB'),
+    InlineKeyboardButton("ℹ️ Поділитися з друзями", switch_inline_query=f"– Це {msg_hello} Спробуй зараз!")
 ]
-keys_main = [InlineKeyboardButton(" - НА ГОЛОВНУ - ", callback_data='M0')]
+keys_main = [InlineKeyboardButton(" ↩️ НА ГОЛОВНУ ↩️ ", callback_data='M0')]
 menu_main = InlineKeyboardMarkup([
-    [InlineKeyboardButton("Загальна інформація", callback_data='M1')],
-    [InlineKeyboardButton("Об’єкти декларування", callback_data='M2')],
-    [InlineKeyboardButton("Суттєві зміни у майновому стані", callback_data='t3')],
-    [InlineKeyboardButton("Відповідальність", callback_data='t4')],
+    [InlineKeyboardButton("📁 Загальна інформація", callback_data='M1')],
+    [InlineKeyboardButton("📁 Об’єкти декларування", callback_data='M2')],
+    [InlineKeyboardButton("📄 Суттєві зміни у майновому стані", callback_data='t3')],
+    [InlineKeyboardButton("📄 Відповідальність", callback_data='t4')],
     keys_ctrl
 ])
 menu_1 = InlineKeyboardMarkup([
@@ -76,12 +75,10 @@ menu_2 = InlineKeyboardMarkup([
 
 
 def cmd_start(bot, update):
-    user = update.message.from_user
-    logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command "
-                 f"from chat {update.message.chat_id}")
-    bot.send_message(text=f"@{user.username} – {user.first_name} {user.last_name}\nнатиснув /start",
-                     chat_id=callback_chat)  # Msg to callback chat
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю! {msg_hello}")  # Hello msg
+    user = user_info(update)
+    logging.info(f"User{user[1]} used /start command from chat {update.message.chat_id}")
+    bot.send_message(text=f"{user[1]}\nнатиснув start", chat_id=callback_chat)  # Msg to callback chat
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю, {user[0]}! Я – {msg_hello}")
     cmd_menu(bot, update)
 
 
@@ -98,7 +95,7 @@ def buttons(bot, update):
     bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)  # Delete old menu
     if query.data in section:  # picked section of menu
         bot.send_message(
-            text=f"Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
+            text=f"📂 Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
             chat_id=query.message.chat_id, parse_mode="Markdown")  # Menu keys
     elif query.data == 'CB':  # picked callback
         if query.message.chat.type == 'private':  # message for private
@@ -128,17 +125,22 @@ def buttons(bot, update):
 
 
 def cmd_callback(bot, update):
-    user = update.message.contact  # user contact info
-    username = f' - @{update.message.from_user.username.replace("_", "&#95;")}' \
-        if update.message.from_user.username is not None else ''
-    user.last_name = f' {user.last_name}' if user.last_name is not None else ''
-    logging.info(f'Callback request from: {user.first_name}{user.last_name}{username} {user.phone_number}')
-    bot.send_message(chat_id=callback_chat, parse_mode="Markdown",
-                     text=f'Отримано контактні дані:\n\n{user.first_name}{user.last_name}{username}' +
-                          f'\n[+{user.phone_number}](call://+{user.phone_number})')  # Msg to callback chat
+    user = user_info(update)
+    user_phone = update.message.contact.phone_number
+    logging.info(f'Callback request from: {user[1]} {user_phone}')
+    bot.send_message(chat_id=callback_chat, parse_mode="Markdown",  # Msg to callback chat
+                     text=f'❗Отримано контактні дані:\n\n{user[1]}' +
+                          f'\n[+{user_phone}](call://+{user_phone})')
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove(),
-                     text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
+                     text=f"Дякуємо за звернення, *{user[0]}*, ми зв'яжемося з Вами найближчим часом.")
     cmd_menu(bot, update)
+
+
+def user_info(update):
+    user = update.message.from_user
+    user.username = f' - @{user.username.replace("_", "&#95;")}' if user.username is not None else ''
+    user.last_name = f' {user.last_name}' if user.last_name is not None else ''
+    return [user.first_name, user.first_name + user.last_name + user.username]
 
 
 def error(bot, update, error):  # extended logger
