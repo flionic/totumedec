@@ -129,16 +129,12 @@ def buttons(bot, update):
 
 def cmd_callback(bot, update):
     user = update.message.contact  # user contact info
-    username = update.message.from_user.username
-    logging.info(f'Callback request from:' +
-                 f' {user.first_name}' +
-                 (f' {user.last_name}' if user.last_name is not None else "") +
-                 (f' @{username.replace("_", "&#95;")}' if username is not None else "") +
-                 f' {user.phone_number}')
+    username = f' - @{update.message.from_user.username.replace("_", "&#95;")}' \
+        if update.message.from_user.username is not None else ''
+    user.last_name = f' {user.last_name}' if user.last_name is not None else ''
+    logging.info(f'Callback request from: {user.first_name}{user.last_name}{username} {user.phone_number}')
     bot.send_message(chat_id=callback_chat, parse_mode="Markdown",
-                     text=f'Отримано контактні дані:\n\n{user.first_name}' +
-                          (f' {user.last_name}' if user.last_name is not None else "") +
-                          (f' - @{username.replace("_", "&#95;")}' if username is not None else "") +
+                     text=f'Отримано контактні дані:\n\n{user.first_name}{user.last_name}{username}' +
                           f'\n[+{user.phone_number}](call://+{user.phone_number})')  # Msg to callback chat
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove(),
                      text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
