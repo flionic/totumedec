@@ -79,7 +79,7 @@ def cmd_start(bot, update):
     logging.info(f"User @{user.username} ({user.first_name} {user.last_name}) used /start command "
                  f"from chat {update.message.chat_id}")
     bot.send_message(text=f"@{user.username} – {user.first_name} {user.last_name}\nнатиснув /start",
-                     chat_id=callback_chat)
+                     chat_id=callback_chat)  # Msg to callback chat
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю! {msg_hello}")
     cmd_menu(bot, update)
 
@@ -95,21 +95,26 @@ def buttons(bot, update):
                'M1': ['Загальна інформація', menu_1],
                'M2': ['Об’єкти декларування', menu_2]}
     if query.data in section:
+        bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         bot.send_message(
             text=f"Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
             chat_id=query.message.chat_id, parse_mode="Markdown")
     elif query.data == 'CB':
+        bot.send_photo(chat_id=query.message.chat_id, photo=open('doc/help_callback.png', 'rb'))
         req_cont = telegram.ReplyKeyboardMarkup(
-            [[telegram.KeyboardButton(text="Залишити контакт", request_contact=True)]])
+            [[telegram.KeyboardButton(text="Натисніть СЮДИ, щоб залишити свій контакт\n\n⭕️⭕️⭕️",
+                                      request_contact=True)]])
         bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", reply_markup=req_cont,
-                         text="Натисніть на кнопку і підтвердіть відправку, щоб ми передзвонили Вам")
+                         text='1. Натисніть на велику кнопку знизу.\n2. Підтвердіть відправку кнопкою "OK".\n\nОчікую натискання ⤵️')
     else:
         data = sqlite3.connect('data.sql')
         c = data.cursor()
         t = (query.data,)
         for row in c.execute("SELECT title, text FROM menu_texts WHERE name=?", t):
+            bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", text=f"*{row[0]}*\n\n{row[1]}")
             bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown",
-                             reply_markup=InlineKeyboardMarkup([ctrl_keys, menu_key]), text=f"*{row[0]}*\n\n{row[1]}")
+                             reply_markup=InlineKeyboardMarkup([ctrl_keys, menu_key]), text=msg_getSection)
             bot.send_message(text=msg_contacts, chat_id=query.message.chat_id, parse_mode="Markdown")
         data.commit()
         data.close()
