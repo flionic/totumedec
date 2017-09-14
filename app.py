@@ -127,9 +127,9 @@ def cmd_callback(bot, update):
                      text=f'Отримано контактні дані:\n'
                           f'{user.first_name} {user.last_name} – @{update.message.from_user.username}\n'
                           f'{user.phone_number}')
-    cmd_menu(bot, update)
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove(),
                      text=f"Дякуємо за звернення, *{user.first_name}*, ми зв'яжемося з Вами найближчим часом.")
+    cmd_menu(bot, update)
 
 
 def error(bot, update, error):
