@@ -15,124 +15,129 @@ Optional variables:
     test_mode = 1       # enable test mode
 """
 # -*- coding: utf-8 -*-
-import os
 import logging
-import sqlite3
-import telegram
-from telegram import ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from os import environ
+from sqlite3 import connect, OperationalError
+from telegram import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler, Filters
+from telegram.error import InvalidToken
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s' if os.environ.get('test_mode')
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s' if environ.get('test_mode')
     else '%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 print('Copyrights © ⏤ E-declaration Bot for Totum by Bionic Inc 2017')
 
-callback_chat = os.environ.get('callback_chat_id')
-msg_hello = 'бот-помічник з питань електронного декларування для публічних осіб.'
 msg_contacts = f"📞 _Tел. для довідок:_ [+380685578758](call://+380685578758)\n💻 http://totum.com.ua/\n\n"
-msg_getSection = "🗃 *Оберіть необхідний розділ:*"
-
+msg_hello = 'бот-помічник з питань електронного декларування для публічних осіб.'
+md = ParseMode.MARKDOWN
+chat_logs = environ.get('callback_chat_id')
 keys_ctrl = [
-    InlineKeyboardButton("️☎️ Зворотній зв’язок", callback_data='CB'),
+    InlineKeyboardButton("️☎️ Зворотній зв’язок", callback_data='callback'),
     InlineKeyboardButton("ℹ️ Поділитися з друзями", switch_inline_query=f"– Це {msg_hello} Спробуй зараз!")
 ]
-keys_main = [InlineKeyboardButton(" ↩️ НА ГОЛОВНУ ↩️ ", callback_data='M0')]
-menu_main = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📁 Загальна інформація", callback_data='M1')],
-    [InlineKeyboardButton("📁 Об’єкти декларування", callback_data='M2')],
-    [InlineKeyboardButton("📄 Суттєві зміни у майновому стані", callback_data='t3')],
-    [InlineKeyboardButton("📄 Відповідальність", callback_data='t4')],
-    keys_ctrl
-])
-menu_1 = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📄 Подання декларації", callback_data='t1_1')],
-    [InlineKeyboardButton("📄 Суб’єкти декларування", callback_data='t1_2')],
-    [InlineKeyboardButton("📄 Відповідальне становище", callback_data='t1_3')],
-    [InlineKeyboardButton("📄 Високий рівень корупційних ризиків", callback_data='t1_4')],
-    [InlineKeyboardButton("📄 Строк декларування", callback_data='t1_5')],
-    [InlineKeyboardButton("📄 Члени сім’ї", callback_data='t1_6')],
-    [InlineKeyboardButton("📄 Членство в організаціях", callback_data='t1_7')],
-    keys_ctrl, keys_main
-])
-menu_2 = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📄 Нерухоме майно", callback_data='t2_1')],
-    [InlineKeyboardButton("📄 Об’єкти незавершеного будівництва", callback_data='t2_2')],
-    [InlineKeyboardButton("📄 Цінне рухоме майно", callback_data='t2_3'),
-     InlineKeyboardButton("📄 Транспортні засоби", callback_data='t2_4')],
-    [InlineKeyboardButton("📄 Цінні папери ", callback_data='t2_5'),
-     InlineKeyboardButton("📄 Нематеріальні активи", callback_data='t2_6')],
-    [InlineKeyboardButton("📄 Корпоративні права", callback_data='t2_7'),
-     InlineKeyboardButton("📄 Доходи", callback_data='t2_8')],
-    [InlineKeyboardButton("📄 Подарунки", callback_data='t2_9'),
-     InlineKeyboardButton("📄 Грошові активи", callback_data='t2_10')],
-    [InlineKeyboardButton("📄 Фінансові зобов’язання", callback_data='t2_11'),
-     InlineKeyboardButton("📄 Видатки та правочини", callback_data='t2_12')],
-    [InlineKeyboardButton("📄 Робота за сумісництвом", callback_data='t2_13')],
-    keys_ctrl, keys_main
-])
+keys_main = [InlineKeyboardButton(" ↩️ НА ГОЛОВНУ ↩️ ", callback_data='main_menu')]
 
 
 def cmd_start(bot, update):
     user = user_info(update)
     logging.info(f"User {user[1]} used /start command from chat {update.message.chat_id}")
-    bot.send_message(text=f"{user[1]}\nнатиснув start", chat_id=callback_chat)  # Msg to callback chat
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"Вітаю, {user[0]}! Я – {msg_hello}")
-    cmd_menu(bot, update)
+    bot.send_message(text=f"{user[1]}\nнатиснув start", chat_id=chat_logs)  # Msg to callback chat
+    bot.send_message(chat_id=update.message.chat_id, parse_mode=md, text=f"Вітаю, {user[0]}! Я – {msg_hello}")
+    build_menu(bot, update)
 
 
-def cmd_menu(bot, update):
-    update.message.reply_text(f"{msg_getSection}", reply_markup=menu_main, parse_mode="Markdown")  # Menu
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=f"{msg_contacts}")  # Contacts
+def cmd_unknown(bot, update):
+    del_menu(bot, update)
+    build_menu(bot, update, message='Мені дуже шкода, але я не розумію ваших повідомлень 😞')
 
 
-def buttons(bot, update):
+def cmd_hidden(bot, update):
+    bot.send_message(chat_id=update.message.chat_id, parse_mode=md,
+                     text=f"© Разработчик Bionic Leha, September 2017. \nhttps://vk.com/farbio\nhttps://allpha.top\n"
+                          f"[bionic.mods@gmail.com](mailto://bionic.mods@gmail.com)")
+
+
+def callback_actions(bot, update):
     query = update.callback_query
-    section = {'M0': ['Головна', menu_main],
-               'M1': ['Загальна інформація', menu_1],
-               'M2': ['Об’єкти декларування', menu_2]}  # Menu subsections
-    bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)  # Delete old menu
-    if query.data in section:  # picked section of menu
-        bot.send_message(
-            text=f"📂 Розділ: *{section[query.data][0]}*", reply_markup=section[query.data][1],
-            chat_id=query.message.chat_id, parse_mode="Markdown")  # Menu keys
-    elif query.data == 'CB':  # picked callback
+    # bot.edit_message_reply_markup(query.message.chat_id, message_id=query.message.message_id)
+    del_menu(bot, query, 0)
+    msg = {'text': '', 'keys': InlineKeyboardMarkup([keys_main]), 'id': query.message.chat_id}
+    if "callback" == query.data:
         if query.message.chat.type == 'private':  # message for private
-            bot.send_photo(chat_id=query.message.chat_id, photo=open('doc/help_callback.png', 'rb'))  # photo-help
-            req_cont = telegram.ReplyKeyboardMarkup(
-                [[telegram.KeyboardButton(text="Натисніть СЮДИ, щоб залишити свій контакт\n\n⭕️⭕️⭕️",
-                                          request_contact=True)]])
-            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", reply_markup=req_cont,
-                             text='1. Натисніть на велику кнопку знизу.\n'
-                                  '2. Підтвердіть відправку кнопкою "OK".\n\nОчікую натискання ⤵️')  # Help message
+            bot.send_photo(msg['id'], reply_markup=msg['keys'], caption='🔎 Як відправити контакт?',
+                           photo=open('doc/help_callback.png', 'rb'))  # photo-help
+            msg['keys'] = ReplyKeyboardMarkup(
+                [[KeyboardButton(text="Натисніть СЮДИ, щоб залишити свій контакт\n\n⭕️⭕️⭕️",
+                                 request_contact=True)]])
+            msg['text'] = '1. Натисніть на велику кнопку знизу.\n' \
+                          '2. Підтвердіть відправку кнопкою "OK".\n\nОчікую натискання ⤵️'
         else:  # message for others
-            bot.send_message(text=f'Для цієї дії, будь ласка, зверніться до мене в особисті повідомлення.\n'
-                                  f'https://t.me/{bot.username}', chat_id=query.message.chat_id, reply_markup=menu_main)
-    else:  # picked text
-        data = sqlite3.connect('data.sql')
+            msg['text'] = f'Для цієї дії, будь ласка, зверніться до мене в особисті повідомлення.\n' \
+                          f'https://t.me/{bot.username}'
+        bot.send_message(msg['id'], text=msg['text'], reply_markup=msg['keys'], parse_mode=md)  # Help message
+    else:
+        build_menu(bot, query, query.data)
+
+
+def build_menu(bot, update, callback=None, message=''):
+    tg = update.message
+    try:
+        data = connect('data.sql')
         c = data.cursor()
-        t = (query.data,)
-        for row in c.execute("SELECT title, text FROM menu_texts WHERE name=?", t):
-            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown",
-                             text=f"*{row[0]}*\n\n{row[1]}")  # print text
-            bot.send_message(chat_id=query.message.chat_id, parse_mode="Markdown", text=msg_getSection,
-                             reply_markup=InlineKeyboardMarkup([keys_ctrl, keys_main]))  # Menu keys
-            bot.send_message(text=msg_contacts, chat_id=query.message.chat_id, parse_mode="Markdown")  # Contacts
-        data.commit()
+        c.execute("SELECT title, description FROM menu WHERE id=?", (callback,))
+        doc = c.fetchone()
+        msg = {'text': f"📂 Розділ: *{doc[0]}*" if doc else message + "\n🗃 *Оберіть необхідний розділ:*", 'keys': [],
+               'reply_id': None}
+        if doc and doc[1]:  # if description exist
+            msg['reply_id'] = tg.message_id + 2
+            if doc[1].startswith('pic_name='):  # send photo if exist
+                msg['text'] = f"🔎 *Надіслав зображення*"
+                bot.send_photo(tg.chat_id, caption="🔎 " + doc[0],
+                               photo=open('doc/' + doc[1].replace('pic_name=', ''), 'rb'))  # MSG Photo
+            else:  # send document
+                msg['text'] = f"🔎 *Надіслав документ*"
+                tg.reply_text(f"*{doc[0]}*\n\n{doc[1]}", parse_mode=md)  # MSG Doc
+        else:  # generate menu
+            sql = "SELECT description NOTNULL, title, id FROM menu WHERE parent_id"
+            sql = [sql + "=?", (callback,)] if doc is not None else [sql + " IS NULL", '']
+            for row in c.execute(sql[0], sql[1]):
+                msg['keys'].append(
+                    [InlineKeyboardButton(("📄 " if row[0] else "📁 ") + row[1], callback_data=str(row[2]))])
+        msg['keys'].append(keys_ctrl)
+        msg['keys'].append(keys_main) if doc else None
+        tg.reply_text(msg['text'], parse_mode=md, reply_to_message_id=msg['reply_id'],
+                      reply_markup=InlineKeyboardMarkup(msg['keys']))  # MSG Menu
+        tg.reply_text(msg_contacts, parse_mode=md)  # MSG Contacts
         data.close()
+    except OperationalError as msg:
+        error(bot, update, f'Error with database ({msg})', name="sqlite3.OperationalError")
 
 
-def cmd_callback(bot, update):
+def callback_report(bot, update):
+    del_menu(bot, update)
     user = user_info(update)
     user_phone = update.message.contact.phone_number
     logging.info(f'Callback request from: {user[1]} {user_phone}')
-    bot.send_message(chat_id=callback_chat, parse_mode="Markdown",  # Msg to callback chat
-                     text=f'❗Отримано контактні дані:\n\n{user[1]}' +
-                          f'\n[+{user_phone}](call://+{user_phone})')
-    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove(),
-                     text=f"Дякуємо за звернення, *{user[0]}*, ми зв'яжемося з Вами найближчим часом.")
-    cmd_menu(bot, update)
+    bot.send_message(text=f'❗Отримано контактні дані:\n\n{user[1]}\n[+{user_phone}](call://+{user_phone})',
+                     chat_id=chat_logs, parse_mode=md)  # Msg to callback chat)
+    bot.send_message(chat_id=update.message.chat_id, parse_mode=md, reply_markup=ReplyKeyboardRemove(),
+                     text=f"Дякуємо за звернення, *{user[0]}*. Ми зв'яжемося з Вами найближчим часом.")
+    build_menu(bot, update)
+
+
+def del_menu(bot, update, pl=1):
+    try:
+        if pl:
+            bot.delete_message(update.message.chat_id, message_id=update.message.message_id-1)
+            bot.delete_message(update.message.chat_id, message_id=update.message.message_id-2)
+        else:
+            bot.delete_message(update.message.chat_id, message_id=update.message.message_id)
+            bot.delete_message(update.message.chat_id, message_id=update.message.message_id+1)
+    except Exception as excp:
+        excp = excp
 
 
 def user_info(update):
@@ -142,31 +147,35 @@ def user_info(update):
     return [user.first_name, user.first_name + user.last_name + user.username]
 
 
-def error(bot, update, error):  # extended logger
-    if update:  # Avoid duplications
+def error(bot, update, error, name=None):  # extended logger
+    if name:
+        logging.getLogger(name).critical(error)
+        bot.send_message(chat_id=update.message.chat_id, parse_mode=md, text='Упс! Виникла помилка',
+                         reply_markup=InlineKeyboardMarkup([keys_main]))  # Menu
+        bot.send_message(chat_id=chat_logs, parse_mode=md, text=f'⚠️ Произошла ошибка с *{name}*\n\n{error}')
+    elif update:  # Avoid duplications
         logger.warning('%s' % error)
 
 
 def main():
     try:  # Create EventHandler
-        updater = Updater(token=os.environ.get('token'))
+        updater = Updater(environ.get('token'))
         dp = updater.dispatcher
+    except InvalidToken:
+        logger.critical("Token is invalid")
     except ValueError:
-        logger.error("Token was not found")
-    except telegram.error.InvalidToken:
-        logger.exception("Token is invalid")
+        logger.critical("Token not given. Please, setup environment variables or check settings.py")
     else:
         # Add bot handlers
         dp.add_handler(CommandHandler('start', cmd_start))
-        dp.add_handler(MessageHandler(Filters.text, cmd_menu))
-        dp.add_handler(MessageHandler(Filters.contact, cmd_callback))
-        dp.add_handler(CallbackQueryHandler(buttons))
-
+        dp.add_handler(CommandHandler(['bionic', 'info', 'dev'], cmd_hidden))
+        dp.add_handler(MessageHandler(Filters.contact, callback_report))
+        dp.add_handler(CallbackQueryHandler(callback_actions))
+        dp.add_handler(MessageHandler(Filters.all, cmd_unknown))
         # Extend logging
         dp.add_error_handler(error)
-
         # Start Bot
-        logger.info("Start bot")
+        logger.info("Start bot on @%s" % updater.bot.username)
         updater.start_polling()
 
 
