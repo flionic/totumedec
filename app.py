@@ -62,8 +62,8 @@ def cmd_hidden(bot, update):
 
 def callback_actions(bot, update):
     query = update.callback_query
-    # bot.edit_message_reply_markup(query.message.chat_id, message_id=query.message.message_id)
-    del_menu(bot, query, 0)
+    bot.edit_message_reply_markup(query.message.chat_id, message_id=query.message.message_id)
+    # del_menu(bot, query, 0)
     msg = {'text': '', 'keys': InlineKeyboardMarkup([keys_main]), 'id': query.message.chat_id}
     if "callback" == query.data:
         if query.message.chat.type == 'private':  # message for private
@@ -79,6 +79,7 @@ def callback_actions(bot, update):
                           f'https://t.me/{bot.username}'
         bot.send_message(msg['id'], text=msg['text'], reply_markup=msg['keys'], parse_mode=md)  # Help message
     else:
+        # bot.delete_message(query.message.chat_id, query.message.message_id)
         build_menu(bot, query, query.data)
 
 
@@ -89,28 +90,32 @@ def build_menu(bot, update, callback=None, message=''):
         c = data.cursor()
         c.execute("SELECT title, description FROM menu WHERE id=?", (callback,))
         doc = c.fetchone()
-        msg = {'text': f"📂 Розділ: *{doc[0]}*" if doc else message + "\n🗃 *Оберіть необхідний розділ:*", 'keys': [],
-               'reply_id': None}
+        msg = {'text': f"📂 Розділ: *{doc[0]}*" if doc else message + "\n\n🗃 *Оберіть необхідний розділ:*", 'keys': [],
+               'reply_id': None, 'type': None}
         if doc and doc[1]:  # if description exist
-            msg['reply_id'] = tg.message_id + 2
-            if doc[1].startswith('pic_name='):  # send photo if exist
+            bot.delete_message(update.message.chat_id, update.message.message_id)
+            msg['reply_id'] = tg.message_id+2
+            if doc[1].startswith('set_pic='):  # send photo if exist
+                bot.send_photo(tg.chat_id, open('doc/' + doc[1].replace('set_pic=', ''), 'rb'), caption="🔎 " + doc[0])
                 msg['text'] = f"🔎 *Надіслав зображення*"
-                bot.send_photo(tg.chat_id, caption="🔎 " + doc[0],
-                               photo=open('doc/' + doc[1].replace('pic_name=', ''), 'rb'))  # MSG Photo
             else:  # send document
-                msg['text'] = f"🔎 *Надіслав документ*"
                 tg.reply_text(f"*{doc[0]}*\n\n{doc[1]}", parse_mode=md)  # MSG Doc
+                msg['text'] = f"📄 *Надіслав документ*"
         else:  # generate menu
             sql = "SELECT description NOTNULL, title, id FROM menu WHERE parent_id"
             sql = [sql + "=?", (callback,)] if doc is not None else [sql + " IS NULL", '']
             for row in c.execute(sql[0], sql[1]):
-                msg['keys'].append(
-                    [InlineKeyboardButton(("📄 " if row[0] else "📁 ") + row[1], callback_data=str(row[2]))])
+                msg['keys'].append([InlineKeyboardButton(("📄 " if row[0] else "📁 ") + row[1],
+                                                         callback_data=str(row[2]))])
         msg['keys'].append(keys_ctrl)
         msg['keys'].append(keys_main) if doc else None
-        tg.reply_text(msg['text'], parse_mode=md, reply_to_message_id=msg['reply_id'],
-                      reply_markup=InlineKeyboardMarkup(msg['keys']))  # MSG Menu
-        tg.reply_text(msg_contacts, parse_mode=md)  # MSG Contacts
+        if msg['reply_id'] or (callback is None):
+            tg.reply_text(text=msg['text'], reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md,
+                          reply_to_message_id=msg['reply_id'])  # MSG Menu
+            tg.reply_text(msg_contacts, parse_mode=md)  # MSG Contacts
+        elif callback:
+            bot.edit_message_text(msg['text'], tg.chat_id, tg.message_id,
+                                  reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md)
         data.close()
     except OperationalError as msg:
         error(bot, update, f'Error with database ({msg})', name="sqlite3.OperationalError")
