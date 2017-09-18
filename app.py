@@ -95,32 +95,35 @@ def build_menu(bot, update, callback=None, message=''):
         if doc and doc[1]:  # if description exist
             del_menu(bot, update)
             msg['reply_id'] = tg.message_id+2
+            msg['text'] = "\n\n🗃 *Оберіть необхідний розділ:*"
             if doc[1].startswith('set_pic='):  # send photo if exist
                 bot.send_photo(tg.chat_id, open('doc/' + doc[1].replace('set_pic=', ''), 'rb'), caption="🔎 " + doc[0])
-                msg['text'] = f"↗ *Надіслав зображення*"
+                # msg['text'] = f"↗ *Надіслав зображення*"
             else:  # send document
                 tg.reply_text(f"📄 *{doc[0]}*\n\n{doc[1]}", parse_mode=md)  # MSG Doc
-                msg['text'] = f"↗ *Надіслав документ*"
+                # msg['text'] = f"↗ *Надіслав документ*"
         else:  # generate menu
             sql = "SELECT description NOTNULL, title, id FROM menu WHERE parent_id"
             sql = [sql + "=?", (callback,)] if doc is not None else [sql + " IS NULL", '']
             for row in c.execute(sql[0], sql[1]):
                 msg['keys'].append(InlineKeyboardButton(("📄 " if row[0] else "📁 ") + row[1],
                                                         callback_data=str(row[2])))
+            data.close()
             n_cols = 2 if len(msg['keys']) > 7 else 1
             msg['keys'] = [msg['keys'][i:i + n_cols] for i in range(0, len(msg['keys']), n_cols)]
         msg['keys'].append(keys_ctrl)
         msg['keys'].append(keys_main) if doc else None
-        if msg['reply_id'] or (callback == 'new_menu') or (callback is None):
-            tg.reply_text(text=msg['text'], reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md,
-                          reply_to_message_id=msg['reply_id'])  # MSG Menu
-            tg.reply_text(msg_contacts, parse_mode=md)  # MSG Contacts
+        if msg['reply_id']:
+            tg.reply_text(text=msg['text'], reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md)  # MSG Menu
+            tg.reply_text(f"↗ *Надіслав {('Зображення*' if (tg.reply_to_message and tg.reply_to_message.photo) else 'Документ*')}\n\n{msg_contacts}", parse_mode=md, reply_to_message_id=msg['reply_id'])  # MSG Contacts
+        elif (callback == 'new_menu') or (callback is None):
+            tg.reply_text(text=msg['text'], reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md)  # MSG Menu
+            tg.reply_text(f"{msg_contacts}", parse_mode=md)  # MSG Contacts
         elif callback:
-            if tg.reply_to_message:
-                    msg['text'] = f"↗ *{('Зображення*' if tg.reply_to_message.photo else 'Документ*')} {msg['text']}"
-            bot.edit_message_text(msg['text'], tg.chat_id, tg.message_id,
-                                  reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md)
-        data.close()
+            # if tg.reply_to_message:
+            #         msg['text'] = f"↗ *{('Зображення*' if tg.reply_to_message.photo else 'Документ*')} {msg['text']}"
+            bot.edit_message_text(msg['text'], tg.chat_id, tg.message_id, parse_mode=md,
+                                  reply_markup=InlineKeyboardMarkup(msg['keys']))
     except OperationalError as msg:
         error(bot, update, f'Error with database ({msg})', name="sqlite3.OperationalError")
 
