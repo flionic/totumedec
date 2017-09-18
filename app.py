@@ -172,7 +172,7 @@ def main():
     else:
         # Add bot handlers
         dp.add_handler(CommandHandler('start', cmd_start))
-        dp.add_handler(CommandHandler(['bionic', 'info', 'dev'], cmd_hidden))
+        dp.add_handler(CommandHandler(['bionic', 'dev'], cmd_hidden))
         dp.add_handler(MessageHandler(Filters.contact, callback_report))
         dp.add_handler(CallbackQueryHandler(callback_actions))
         dp.add_handler(MessageHandler(Filters.all, cmd_unknown))
