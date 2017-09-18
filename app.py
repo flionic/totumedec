@@ -57,13 +57,14 @@ def cmd_unknown(bot, update):
 def cmd_hidden(bot, update):
     bot.send_message(chat_id=update.message.chat_id, parse_mode=md,
                      text=f"© Разработчик Bionic Leha, September 2017. \nhttps://vk.com/farbio\nhttps://allpha.top\n"
-                          f"[bionic.mods@gmail.com](mailto://bionic.mods@gmail.com)")
+                          f"[bionic.mods@gmail.com](mailto://bionic.mods@gmail.com)\n\nАх да. Ты пидор)")
 
 
 def callback_actions(bot, update):
     query = update.callback_query
     bot.edit_message_reply_markup(query.message.chat_id, message_id=query.message.message_id)
-    msg = {'text': '', 'keys': InlineKeyboardMarkup([[InlineKeyboardButton(" ↩️ НА ГОЛОВНУ ↩️ ", callback_data='new_menu')]]), 'id': query.message.chat_id}
+    msg = {'keys': InlineKeyboardMarkup([[InlineKeyboardButton(" ↩️ НА ГОЛОВНУ ↩️ ", callback_data='new_menu')]]),
+           'text': '', 'id': query.message.chat_id}
     if "callback" == query.data:
         del_menu(bot, query)
         if query.message.chat.type == 'private':  # message for private
@@ -110,8 +111,8 @@ def build_menu(bot, update, callback=None, message=''):
         msg['keys'].append(keys_ctrl)
         msg['keys'].append(keys_main) if doc else None
         if msg['reply_id'] or (callback == 'new_menu') or (callback is None):
-            tg.reply_text(text=msg['text'], reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md)  # MSG Menu
-            tg.reply_text(f"{msg_contacts}", parse_mode=md)  # MSG Contacts
+            tg.reply_text(text=msg['text'], reply_markup=InlineKeyboardMarkup(msg['keys']), parse_mode=md)  # Menu
+            tg.reply_text(f"{msg_contacts}", parse_mode=md)  # Contacts
         elif callback:
             bot.edit_message_text(msg['text'], tg.chat_id, tg.message_id, parse_mode=md,
                                   reply_markup=InlineKeyboardMarkup(msg['keys']))
