@@ -57,7 +57,7 @@ def cmd_unknown(bot, update):
 def cmd_hidden(bot, update):
     bot.send_message(chat_id=update.message.chat_id, parse_mode=md,
                      text=f"© Разработчик Bionic Leha, September 2017. \nhttps://vk.com/farbio\nhttps://allpha.top\n"
-                          f"[bionic.mods@gmail.com](mailto://bionic.mods@gmail.com)\n\nАх да. Ты пидор)")
+                          f"[bionic.mods@gmail.com](mailto://bionic.mods@gmail.com)")
 
 
 def callback_actions(bot, update):
